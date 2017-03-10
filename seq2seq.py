@@ -151,7 +151,9 @@ def rnn_decoder(decoder_inputs,
     prev = None
     for i, inp in enumerate(decoder_inputs):
       if loop_function is not None and prev is not None:
+        # 变量复用
         with variable_scope.variable_scope("loop_function", reuse=True):
+          # 在第二个cell计算输出前，用loop_function得到下一个cell的input，忽略decoder input
           inp = loop_function(prev, i)
       if i > 0:
         variable_scope.get_variable_scope().reuse_variables()
@@ -189,7 +191,9 @@ def basic_rnn_seq2seq(encoder_inputs,
   """
   with variable_scope.variable_scope(scope or "basic_rnn_seq2seq"):
     enc_cell = copy.deepcopy(cell)
+    # encoder是static_rnn
     _, enc_state = core_rnn.static_rnn(enc_cell, encoder_inputs, dtype=dtype)
+    # decoder没有loop_function
     return rnn_decoder(decoder_inputs, enc_state, cell)
 
 
@@ -228,6 +232,7 @@ def tied_rnn_seq2seq(encoder_inputs,
     _, enc_state = core_rnn.static_rnn(
         cell, encoder_inputs, dtype=dtype, scope=scope)
     variable_scope.get_variable_scope().reuse_variables()
+    # 使用从外部传进来的loop_function
     return rnn_decoder(
         decoder_inputs,
         enc_state,
@@ -295,6 +300,7 @@ def embedding_rnn_decoder(decoder_inputs,
 
     embedding = variable_scope.get_variable("embedding",
                                             [num_symbols, embedding_size])
+    # 使用最前面定义的loop_function
     loop_function = _extract_argmax_and_embed(
         embedding, output_projection,
         update_embedding_for_previous) if feed_previous else None
@@ -362,6 +368,7 @@ def embedding_rnn_seq2seq(encoder_inputs,
 
     # Encoder.
     encoder_cell = copy.deepcopy(cell)
+    # embedding的实现通过加一个encoder_cell加一个EmbbdingWrapper
     encoder_cell = core_rnn_cell.EmbeddingWrapper(
         encoder_cell,
         embedding_classes=num_encoder_symbols,
@@ -371,6 +378,7 @@ def embedding_rnn_seq2seq(encoder_inputs,
 
     # Decoder.
     if output_projection is None:
+      # 要给decoder_cell外面包一层维度映射的wrapper
       cell = core_rnn_cell.OutputProjectionWrapper(cell, num_decoder_symbols)
 
     if isinstance(feed_previous, bool):
