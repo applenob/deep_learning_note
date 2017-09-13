@@ -2,4 +2,5 @@ test.py
 .idea
 .ipynb_checkpoints
 *.pyc
-data/text8
+data
+out
