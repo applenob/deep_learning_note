@@ -99,6 +99,7 @@ def _extract_argmax_and_embed(embedding,
 
   def loop_function(prev, _):
     """上一次的输出(logits)-->index-->embedding"""
+    # 先从embedding_size映射到num_symbols
     if output_projection is not None:
       prev = nn_ops.xw_plus_b(prev, output_projection[0], output_projection[1])
     # previous symbol 指的是上一次的输出的index，比如说第10号词
@@ -209,6 +210,8 @@ def tied_rnn_seq2seq(encoder_inputs,
   then runs decoder, initialized with the last encoder state, on decoder_inputs.
   Encoder and decoder use the same RNN cell and share parameters.
 
+  tied_rnn_seq2seq和basic_rnn_seq2seq就在于tied_rnn_seq2seq会分享变量。
+
   Args:
     encoder_inputs: A list of 2D Tensors [batch_size x input_size].
     decoder_inputs: A list of 2D Tensors [batch_size x input_size].
@@ -258,6 +261,9 @@ def embedding_rnn_decoder(decoder_inputs,
     cell: core_rnn_cell.RNNCell defining the cell function.
     num_symbols: Integer, how many symbols come into the embedding.
     embedding_size: Integer, the length of the embedding vector for each symbol.
+
+    num_symbols相当于vocab_size，这里需要做映射
+
     output_projection: None or a pair (W, B) of output projection weights and
       biases; W has shape [output_size x num_symbols] and B has
       shape [num_symbols]; if provided and feed_previous=True, each fed
